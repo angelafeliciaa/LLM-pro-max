@@ -1,10 +1,11 @@
-import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BrainCircuit, Zap, Sparkles, ArrowRight } from "lucide-react";
+'use client'
 
-export default function Component() {
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { BrainCircuit, Zap, Sparkles, ArrowRight } from "lucide-react"
+
+export function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-teal-900 to-purple-900 text-white font-sans relative overflow-hidden">
       {/* Background shapes with reduced opacity */}
@@ -65,11 +66,37 @@ export default function Component() {
             </CardContent>
           </Card>
           <Card className="bg-blue-800 bg-opacity-20 border-teal-700 border-opacity-30">
-            {/* Add content for the third card here */}
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-teal-300 opacity-90">
+                <Sparkles size={24} />
+                <span>Personalized Experience</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-teal-100 opacity-80">
+              <p>Tailored interactions based on your preferences and usage patterns.</p>
+            </CardContent>
           </Card>
         </section>
-      </main>
-    </div>
-  );
-}
 
+        <section className="text-center">
+          <h3 className="text-3xl font-bold mb-4 text-teal-300 opacity-90">Ready to upgrade your AI experience?</h3>
+          <p className="text-xl mb-8 text-teal-100 opacity-80">Join thousands of satisfied users and revolutionize the way you interact with AI.</p>
+          <Button size="lg" className="bg-gradient-to-r from-teal-400 to-blue-500 opacity-90 hover:opacity-100 hover:from-teal-300 hover:to-blue-400 text-blue-900 font-bold">
+            Start Your Free Trial <ArrowRight className="ml-2" size={16} />
+          </Button>
+        </section>
+      </main>
+
+      <footer className="container mx-auto px-4 py-8 mt-16 border-t border-teal-800 border-opacity-30">
+        <div className="flex justify-between items-center text-teal-300 opacity-80">
+          <p>&copy; 2023 EnhancedGPT. All rights reserved.</p>
+          <div className="space-x-4">
+            <Button variant="ghost" className="text-teal-300 opacity-80 hover:text-teal-100 hover:opacity-100">Privacy Policy</Button>
+            <Button variant="ghost" className="text-teal-300 opacity-80 hover:text-teal-100 hover:opacity-100">Terms of Service</Button>
+            <Button variant="ghost" className="text-teal-300 opacity-80 hover:text-teal-100 hover:opacity-100">Contact</Button>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
