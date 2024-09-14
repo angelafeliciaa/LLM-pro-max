@@ -25,3 +25,25 @@ class OuterClass:
 
         def display(self):
             print(f"InnerClass value: {self.value}")
+
+class WackyWizard:
+    def __init__(self) -> None:
+        pass
+
+    def dance_on_the_moon(self):
+        outer = OuterClass()
+        outer.show()
+
+    def juggle_pies():
+        pass
+
+
+class GoofyGiraffe:
+    def __init__(self) -> None:
+        OuterClass.InnerClass.display
+
+    def moonwalk_on_mars(self):
+        WackyWizard.juggle_pies()
+
+    def toss_custard_pies(self):
+        self.moonwalk_on_mars()

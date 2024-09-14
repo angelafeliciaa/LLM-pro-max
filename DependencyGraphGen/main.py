@@ -1,8 +1,19 @@
+import os
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse, StreamingResponse
+import httpx
+import io
+
+app = FastAPI()
+
+
 import inspect
 import importlib
 import re
 
-test_code = importlib.import_module("downloads.test_code")
+DOWNLOAD_DIR = "downloads"
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+TEST_CODE_FILE = "downloads/test_code.py"
 
 def _f():
     pass
@@ -139,25 +150,56 @@ def required_classes(n:Node):
             class_objs.append(x.class_obj)
     return class_objs
 
-def required_code(n:Node):
-    return module_level_group.gen_code(required_functions(n))
-        
+@app.get("/download/")
+async def download_file(file_url: str = Query(..., description="URL of the file to download")):
+    # Extract the file name from the URL
+    file_name = file_url.split("/")[-1]
 
-module_level_group = Group(_non_magic_dir(test_code))
+    # Full path where the file will be saved
+    file_path = TEST_CODE_FILE
 
-graph = Graph()
-for n in module_level_group.nodes:
-    graph.add_node(n)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(file_url)
 
-for n_1 in graph:
-    if n_1.class_obj == None:
-        source = inspect.getsource(getattr(test_code, n_1.name))
-    else:
-        source = inspect.getsource(getattr(n_1.class_obj, n_1.name))
-    for n_2 in graph:
-        if n_1 == n_2:
-            continue # do not add edge to self
-        if re.search(f"{n_2.name}(.*)", source): # if we find foo() or whatever in the source code
-            n_1.add_edge_to(n_2)
+        if response.status_code == 200:
+            # Write the file to the specified directory
+            with open(file_path, "wb") as file:
+                file.write(response.content)
+            
+            return JSONResponse(
+                content={"message": "File downloaded successfully", "file_path": file_path},
+                status_code=200
+            )
+        else:
+            raise HTTPException(status_code=response.status_code, detail="File not found")
 
-print(required_code(graph.get_node_by_name("bar")))
+@app.get("/")
+def root():
+    return {"message": "Hello World"}
+
+@app.get("/required_code/{function_name}")
+def get_required_code(function_name):
+
+    def required_code(n:Node):
+        return module_level_group.gen_code(required_functions(n))
+    
+    test_code = importlib.import_module("downloads.test_code")
+
+    module_level_group = Group(_non_magic_dir(test_code))
+    
+    graph = Graph()
+    for n in module_level_group.nodes:
+        graph.add_node(n)
+
+    for n_1 in graph:
+        if n_1.class_obj == None:
+            source = inspect.getsource(getattr(test_code, n_1.name))
+        else:
+            source = inspect.getsource(getattr(n_1.class_obj, n_1.name))
+        for n_2 in graph:
+            if n_1 == n_2:
+                continue # do not add edge to self
+            if re.search(f"{n_2.name}(.*)", source): # if we find foo() or whatever in the source code
+                n_1.add_edge_to(n_2)
+
+    return required_code(graph.get_node_by_name(function_name))
