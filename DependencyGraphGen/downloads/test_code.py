@@ -40,7 +40,7 @@ class WackyWizard:
 
 class GoofyGiraffe:
     def __init__(self) -> None:
-        OuterClass.InnerClass.display()
+        OuterClass.InnerClass.display
 
     def moonwalk_on_mars(self):
         WackyWizard.juggle_pies()
