@@ -1,0 +1,226 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+    <div style="position: absolute; top: 10px; left: 10px; z-index: 1; background-color: white; padding: 10px; border-radius: 5px;">
+        <h3>Node Types</h3>
+        <ul style="list-style-type: none; padding-left: 0;">
+            <li><span style="display: inline-block; width: 20px; height: 20px; background-color: #ADD8E6; margin-right: 5px;"></span>File</li>
+            <li><span style="display: inline-block; width: 20px; height: 20px; background-color: #90EE90; margin-right: 5px;"></span>Function</li>
+            <li><span style="display: inline-block; width: 20px; height: 20px; background-color: #FFB6C1; margin-right: 5px;"></span>Class</li>
+            <li><span style="display: inline-block; width: 20px; height: 20px; background-color: #FFD700; margin-right: 5px;"></span>Module</li>
+        </ul>
+        <h3>Edge Types</h3>
+        <ul style="list-style-type: none; padding-left: 0;">
+            <li><span style="display: inline-block; width: 20px; height: 2px; background-color: #848484; margin-right: 5px;"></span>Import</li>
+            <li><span style="display: inline-block; width: 20px; height: 2px; background-color: #FF0000; margin-right: 5px;"></span>Function Call</li>
+        </ul>
+    </div>
+    
+    <div style="position: absolute; top: 10px; right: 10px; z-index: 1; background-color: white; padding: 10px; border-radius: 5px;">
+        <input type="text" id="searchInput" placeholder="Search nodes...">
+        <button onclick="searchNode()">Search</button>
+    </div>
+    <script>
+    function searchNode() {
+        var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        var allNodes = network.body.data.nodes.get();
+        var foundNodes = allNodes.filter(node => 
+            node.label.toLowerCase().includes(searchTerm) || 
+            node.id.toLowerCase().includes(searchTerm)
+        );
+        
+        if (foundNodes.length > 0) {
+            // Dim all nodes
+            allNodes.forEach(node => {
+                network.body.data.nodes.update({
+                    id: node.id, 
+                    color: {
+                        background: '#D3D3D3',
+                        border: '#A9A9A9'
+                    }
+                });
+            });
+            
+            // Highlight found nodes and their connections
+            var nodesToHighlight = new Set();
+            foundNodes.forEach(node => {
+                nodesToHighlight.add(node.id);
+                // Get connected nodes
+                network.getConnectedNodes(node.id).forEach(connectedNode => {
+                    nodesToHighlight.add(connectedNode);
+                });
+            });
+            
+            nodesToHighlight.forEach(nodeId => {
+                var node = allNodes.find(n => n.id === nodeId);
+                network.body.data.nodes.update({
+                    id: nodeId, 
+                    color: {
+                        background: '#FF4500',
+                        border: '#FF8C00'
+                    }
+                });
+            });
+            
+            // Fit view to highlighted nodes
+            network.fit({
+                nodes: Array.from(nodesToHighlight),
+                animation: true
+            });
+        } else {
+            alert('No matching nodes found.');
+        }
+    }
+
+    // Reset colors when search is cleared
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        if (e.target.value === '') {
+            var allNodes = network.body.data.nodes.get();
+            allNodes.forEach(node => {
+                var originalColor = getNodeColor(node.group);
+                network.body.data.nodes.update({
+                    id: node.id, 
+                    color: {
+                        background: originalColor,
+                        border: originalColor
+                    }
+                });
+            });
+        }
+    });
+
+    function getNodeColor(nodeType) {
+        var colors = {
+            'file': '#ADD8E6',    // Light Blue
+            'function': '#90EE90', // Light Green
+            'class': '#FFB6C1',    // Light Pink
+            'module': '#FFD700'    // Gold
+        };
+        return colors[nodeType] || '#FFFFFF';  // Default to white if type is unknown
+    }
+    </script>
+    
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"group": "file", "id": "app", "label": "app", "shape": "dot", "title": "app\n\nfrom flask import Flask\nfrom controllers.user_controller import user_routes\n\napp = Flask(__name__)\napp.register_blueprint(user_routes)\n\n\n@app.route(\u0026#x27;/\u0026#x27;)\ndef index():\n    return \u0026#x27;Welcome to the Loop Labyrinth!\u0026#x27;"}, {"group": "unknown", "id": "flask", "label": "flask", "shape": "dot", "title": "flask\n\nNo snippet available"}, {"group": "unknown", "id": "controllers", "label": "controllers", "shape": "dot", "title": "controllers\n\nNo snippet available"}, {"group": "function", "id": "app.index", "label": "index", "shape": "dot", "title": "app.index\n\nNo snippet available"}, {"group": "file", "id": "controllers.auth_controller", "label": "auth_controller", "shape": "dot", "title": "controllers.auth_controller\n\nfrom flask import Blueprint\nfrom services.auth_service import authenticate_user\n\nauth_routes = Blueprint(\u0026#x27;auth_routes\u0026#x27;, __name__)\n\n\n@auth_routes.route(\u0026#x27;/authenticate\u0026#x27;)\ndef authenticate():\n    return authenticate_user()"}, {"group": "unknown", "id": "services", "label": "services", "shape": "dot", "title": "services\n\nNo snippet available"}, {"group": "function", "id": "controllers.auth_controller.authenticate", "label": "authenticate", "shape": "dot", "title": "controllers.auth_controller.authenticate\n\nNo snippet available"}, {"group": "file", "id": "controllers.product_controller", "label": "product_controller", "shape": "dot", "title": "controllers.product_controller\n\nfrom flask import Blueprint\nfrom services.product_service import get_product\n\nproduct_routes = Blueprint(\u0026#x27;product_routes\u0026#x27;, __name__)\n\n\n@product_routes.route(\u0026#x27;/products\u0026#x27;)\ndef products():\n    return get_product()"}, {"group": "function", "id": "controllers.product_controller.products", "label": "products", "shape": "dot", "title": "controllers.product_controller.products\n\nNo snippet available"}, {"group": "file", "id": "controllers.user_controller", "label": "user_controller", "shape": "dot", "title": "controllers.user_controller\n\nfrom flask import Blueprint\nfrom services.user_service import get_user\n\nuser_routes = Blueprint(\u0026#x27;user_routes\u0026#x27;, __name__)\n\n\n@user_routes.route(\u0026#x27;/users\u0026#x27;)\ndef users():\n    return get_user()"}, {"group": "function", "id": "controllers.user_controller.users", "label": "users", "shape": "dot", "title": "controllers.user_controller.users\n\nNo snippet available"}, {"group": "file", "id": "models.order", "label": "order", "shape": "dot", "title": "models.order\n\nfrom services.user_service import get_user\nfrom services.product_service import get_product\n\n\nclass Order:\n    @staticmethod\n    def create_order():\n        user = get_user()\n        product = get_product()\n        # Logic to create an order"}, {"group": "class", "id": "models.order.Order", "label": "Order", "shape": "dot", "title": "models.order.Order\n\nNo snippet available"}, {"group": "function", "id": "models.order.create_order", "label": "create_order", "shape": "dot", "title": "models.order.create_order\n\nNo snippet available"}, {"group": "file", "id": "models.product", "label": "product", "shape": "dot", "title": "models.product\n\nfrom controllers.product_controller import product_routes\n\n\nclass Product:\n    @staticmethod\n    def get_product_info():\n        # Fetch product information (Dummy data for example)\n        return {\u0026#x27;name\u0026#x27;: \u0026#x27;Example Product\u0026#x27;, \u0026#x27;id\u0026#x27;: 456}"}, {"group": "class", "id": "models.product.Product", "label": "Product", "shape": "dot", "title": "models.product.Product\n\nNo snippet available"}, {"group": "function", "id": "models.product.get_product_info", "label": "get_product_info", "shape": "dot", "title": "models.product.get_product_info\n\nNo snippet available"}, {"group": "file", "id": "models.user", "label": "user", "shape": "dot", "title": "models.user\n\nfrom controllers.user_controller import user_routes\n\n\nclass User:\n    @staticmethod\n    def get_user_info():\n        # Fetch user information (Dummy data for example)\n        return {\u0026#x27;name\u0026#x27;: \u0026#x27;John Doe\u0026#x27;, \u0026#x27;id\u0026#x27;: 123}"}, {"group": "class", "id": "models.user.User", "label": "User", "shape": "dot", "title": "models.user.User\n\nNo snippet available"}, {"group": "function", "id": "models.user.get_user_info", "label": "get_user_info", "shape": "dot", "title": "models.user.get_user_info\n\nNo snippet available"}, {"group": "file", "id": "services.auth_service", "label": "auth_service", "shape": "dot", "title": "services.auth_service\n\nfrom models.user import User\nfrom utils.auth_utils import validate_credentials\n\n\ndef authenticate_user():\n    # Logic for user authentication\n    user = User.get_user_info()\n    return validate_credentials(user)"}, {"group": "unknown", "id": "models", "label": "models", "shape": "dot", "title": "models\n\nNo snippet available"}, {"group": "unknown", "id": "utils", "label": "utils", "shape": "dot", "title": "utils\n\nNo snippet available"}, {"group": "function", "id": "services.auth_service.authenticate_user", "label": "authenticate_user", "shape": "dot", "title": "services.auth_service.authenticate_user\n\nNo snippet available"}, {"group": "file", "id": "services.order_service", "label": "order_service", "shape": "dot", "title": "services.order_service\n\nfrom models.order import Order\nfrom utils.common import some_util_function\nfrom services.auth_service import authenticate_user\n\n\ndef process_order():\n    some_util_function()\n    authenticate_user()  # New addition\n    return Order.create_order()"}, {"group": "function", "id": "services.order_service.process_order", "label": "process_order", "shape": "dot", "title": "services.order_service.process_order\n\nNo snippet available"}, {"group": "file", "id": "services.product_service", "label": "product_service", "shape": "dot", "title": "services.product_service\n\nfrom models.product import Product\nfrom utils.another_util import another_util_function\nfrom services.auth_service import authenticate_user\n\n\ndef get_product():\n    authenticate_user()\n    another_util_function()\n    return Product.get_product_info()"}, {"group": "function", "id": "services.product_service.get_product", "label": "get_product", "shape": "dot", "title": "services.product_service.get_product\n\nNo snippet available"}, {"group": "file", "id": "services.session_service", "label": "session_service", "shape": "dot", "title": "services.session_service\n\nfrom models.user import User\n\n\ndef check_session():\n    # Logic to check user session\n    user_info = User.get_user_info()\n\n    # Additional session logic\nl"}, {"group": "function", "id": "services.session_service.check_session", "label": "check_session", "shape": "dot", "title": "services.session_service.check_session\n\nNo snippet available"}, {"group": "file", "id": "services.user_service", "label": "user_service", "shape": "dot", "title": "services.user_service\n\nfrom models.user import User\nfrom services.auth_service import authenticate_user\nfrom utils.common import some_util_function\n\n\ndef get_user():\n    # Additional logic here\n    authenticate_user()  # New addition\n    return User.get_user_info()"}, {"group": "function", "id": "services.user_service.get_user", "label": "get_user", "shape": "dot", "title": "services.user_service.get_user\n\nNo snippet available"}, {"group": "file", "id": "utils.another_util", "label": "another_util", "shape": "dot", "title": "utils.another_util\n\nfrom services.user_service import get_user\n\n\ndef another_util_function():\n    get_user()\n    # Additional utility logic"}, {"group": "function", "id": "utils.another_util.another_util_function", "label": "another_util_function", "shape": "dot", "title": "utils.another_util.another_util_function\n\nNo snippet available"}, {"group": "file", "id": "utils.auth_utils", "label": "auth_utils", "shape": "dot", "title": "utils.auth_utils\n\nfrom services.auth_service import authenticate_user\n\n\ndef validate_credentials(user):\n    # Validate user credentials\n    return authenticate_user()"}, {"group": "function", "id": "utils.auth_utils.validate_credentials", "label": "validate_credentials", "shape": "dot", "title": "utils.auth_utils.validate_credentials\n\nNo snippet available"}, {"group": "file", "id": "utils.common", "label": "common", "shape": "dot", "title": "utils.common\n\nfrom services.session_service import check_session\nfrom utils.auth_utils import validate_credentials\n\n\ndef some_util_function():\n    user = check_session()\n    # Additional utility logic\n    validate_credentials(user)"}, {"group": "function", "id": "utils.common.some_util_function", "label": "some_util_function", "shape": "dot", "title": "utils.common.some_util_function\n\nNo snippet available"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "app", "title": "Flask", "to": "flask"}, {"arrows": "to", "from": "app", "title": "user_routes", "to": "controllers"}, {"arrows": "to", "from": "app", "title": "", "to": "app.index"}, {"arrows": "to", "from": "controllers.auth_controller", "title": "Blueprint", "to": "flask"}, {"arrows": "to", "from": "controllers.auth_controller", "title": "authenticate_user", "to": "services"}, {"arrows": "to", "from": "controllers.auth_controller", "title": "", "to": "controllers.auth_controller.authenticate"}, {"arrows": "to", "from": "controllers.product_controller", "title": "Blueprint", "to": "flask"}, {"arrows": "to", "from": "controllers.product_controller", "title": "get_product", "to": "services"}, {"arrows": "to", "from": "controllers.product_controller", "title": "", "to": "controllers.product_controller.products"}, {"arrows": "to", "from": "controllers.user_controller", "title": "Blueprint", "to": "flask"}, {"arrows": "to", "from": "controllers.user_controller", "title": "get_user", "to": "services"}, {"arrows": "to", "from": "controllers.user_controller", "title": "", "to": "controllers.user_controller.users"}, {"arrows": "to", "from": "models.order", "title": "get_product", "to": "services"}, {"arrows": "to", "from": "models.order", "title": "", "to": "models.order.Order"}, {"arrows": "to", "from": "models.order", "title": "", "to": "models.order.create_order"}, {"arrows": "to", "from": "models.product", "title": "product_routes", "to": "controllers"}, {"arrows": "to", "from": "models.product", "title": "", "to": "models.product.Product"}, {"arrows": "to", "from": "models.product", "title": "", "to": "models.product.get_product_info"}, {"arrows": "to", "from": "models.user", "title": "user_routes", "to": "controllers"}, {"arrows": "to", "from": "models.user", "title": "", "to": "models.user.User"}, {"arrows": "to", "from": "models.user", "title": "", "to": "models.user.get_user_info"}, {"arrows": "to", "from": "services.auth_service", "title": "User", "to": "models"}, {"arrows": "to", "from": "services.auth_service", "title": "validate_credentials", "to": "utils"}, {"arrows": "to", "from": "services.auth_service", "title": "", "to": "services.auth_service.authenticate_user"}, {"arrows": "to", "from": "services.order_service", "title": "Order", "to": "models"}, {"arrows": "to", "from": "services.order_service", "title": "some_util_function", "to": "utils"}, {"arrows": "to", "from": "services.order_service", "title": "authenticate_user", "to": "services"}, {"arrows": "to", "from": "services.order_service", "title": "", "to": "services.order_service.process_order"}, {"arrows": "to", "from": "services.product_service", "title": "Product", "to": "models"}, {"arrows": "to", "from": "services.product_service", "title": "another_util_function", "to": "utils"}, {"arrows": "to", "from": "services.product_service", "title": "authenticate_user", "to": "services"}, {"arrows": "to", "from": "services.product_service", "title": "", "to": "services.product_service.get_product"}, {"arrows": "to", "from": "services.session_service", "title": "User", "to": "models"}, {"arrows": "to", "from": "services.session_service", "title": "", "to": "services.session_service.check_session"}, {"arrows": "to", "from": "services.user_service", "title": "User", "to": "models"}, {"arrows": "to", "from": "services.user_service", "title": "authenticate_user", "to": "services"}, {"arrows": "to", "from": "services.user_service", "title": "some_util_function", "to": "utils"}, {"arrows": "to", "from": "services.user_service", "title": "", "to": "services.user_service.get_user"}, {"arrows": "to", "from": "utils.another_util", "title": "get_user", "to": "services"}, {"arrows": "to", "from": "utils.another_util", "title": "", "to": "utils.another_util.another_util_function"}, {"arrows": "to", "from": "utils.auth_utils", "title": "authenticate_user", "to": "services"}, {"arrows": "to", "from": "utils.auth_utils", "title": "", "to": "utils.auth_utils.validate_credentials"}, {"arrows": "to", "from": "utils.common", "title": "check_session", "to": "services"}, {"arrows": "to", "from": "utils.common", "title": "validate_credentials", "to": "utils"}, {"arrows": "to", "from": "utils.common", "title": "", "to": "utils.common.some_util_function"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -50, "centralGravity": 0.01, "springLength": 100, "springConstant": 0.08}, "maxVelocity": 50, "solver": "forceAtlas2Based", "timestep": 0.35, "stabilization": {"enabled": true, "iterations": 1000, "updateInterval": 25}}, "interaction": {"navigationButtons": true, "hover": true}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
