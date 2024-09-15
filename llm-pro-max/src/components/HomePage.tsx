@@ -4,8 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Github, Code, Eye, ArrowRight } from "lucide-react";
 import Background from "@/components/Background";
+import { useNavigate } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function HomePage() {
+  const navigate = useNavigate();
+  const { loginWithRedirect, isAuthenticated, logout } = useAuth0();
+
   return (
     <>
       <Background />
@@ -16,7 +21,25 @@ export function HomePage() {
               LLM Pro Max
             </h1>
             <div className="space-x-4">
-              <Button>Sign In</Button>
+              {isAuthenticated ? (
+                <Button
+                  onClick={() => {
+                    logout({
+                      logoutParams: { returnTo: window.location.origin },
+                    });
+                  }}
+                >
+                  Logout
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    loginWithRedirect();
+                  }}
+                >
+                  Sign In
+                </Button>
+              )}
             </div>
           </nav>
         </header>
@@ -36,6 +59,9 @@ export function HomePage() {
               Unlock full project context by connecting your GitHub repository.
             </p>
             <Button
+              onClick={() => {
+                navigate("/chat");
+              }}
               size="lg"
               className="bg-gradient-to-r from-white-400 to-blue-500 opacity-90 hover:opacity-100 hover:from-white-300 hover:to-blue-400 text-blue-900 font-bold"
             >

@@ -243,8 +243,7 @@ button {
   cursor: pointer;
 }
 
-.sidebar-info-upgrade:hover,
-.sidebar-info-user:hover {
+.sidebar-info-upgrade:hover{
   cursor: not-allowed;
 }
 

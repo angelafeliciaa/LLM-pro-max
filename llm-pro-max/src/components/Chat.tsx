@@ -10,6 +10,7 @@ import { BiUser, BiSend, BiSolidUserCircle } from "react-icons/bi";
 import { MdOutlineArrowLeft, MdOutlineArrowRight } from "react-icons/md";
 import { CohereClient } from "cohere-ai";
 import Markdown from "react-markdown";
+import { useAuth0 } from "@auth0/auth0-react";
 
 function App() {
   const [text, setText] = useState("");
@@ -19,8 +20,13 @@ function App() {
   const [isShowSidebar, setIsShowSidebar] = useState(false);
   const allChats = useRef<HTMLDivElement>(null);
   const emptyChat = useRef<HTMLDivElement>(null);
+  const { user, isAuthenticated, logout } = useAuth0();
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      window.location.href = "/";
+      return;
+    }
     const initialMessage = {
       from: "LLM Pro Max",
       isText: true,
@@ -48,7 +54,7 @@ function App() {
     e.preventDefault();
     if (!text) return;
 
-    if (text.startsWith("http") && text.includes("github")) { 
+    if (text.startsWith("http") && text.includes("github")) {
       setGitHubLink(text);
       setChat((prev) => [...prev, { from: "You", text: text }]);
       emptyChat.current.style.display = "none";
@@ -88,7 +94,9 @@ function App() {
       });
 
       if (JSON.parse(response.text).functions.length === 0) {
-        fetch(`http://127.0.0.1:8080/chat/?repo_url=${gitHubLink}&query=${text}`)
+        fetch(
+          `http://127.0.0.1:8080/chat/?repo_url=${gitHubLink}&query=${text}`,
+        )
           .then((response) => response.json())
           .then((data) => {
             setChat((prev) => [
@@ -100,36 +108,36 @@ function App() {
           })
           .catch((error) => console.error(error));
       } else {
-          fetch(
-            `http://localhost:8000/required_code?function_names=${response.text}`,
-          )
-            .then((response) => response.json())
-            .then(async (data) => {
-              const finalResponse = await cohere.chatStream({
-                model: "command-r-08-2024",
-                message: `${prompt} Use the following code context to answer the question: ${data}`,
-              });
+        fetch(
+          `http://localhost:8000/required_code?function_names=${response.text}`,
+        )
+          .then((response) => response.json())
+          .then(async (data) => {
+            const finalResponse = await cohere.chatStream({
+              model: "command-r-08-2024",
+              message: `${prompt} Use the following code context to answer the question: ${data}`,
+            });
 
-              console.log(
-                `${prompt} Use the following code context to answer the question: ${data}`,
-              );
+            console.log(
+              `${prompt} Use the following code context to answer the question: ${data}`,
+            );
 
-              for await (const message of finalResponse) {
-                if (message.eventType === "text-generation") {
-                  // append each text to the response as it comes
-                  // responseText += message.text;
-                  // add the response as it comes in using setChat
-                  setResponseText((prev) => prev + message.text);
-                }
+            for await (const message of finalResponse) {
+              if (message.eventType === "text-generation") {
+                // append each text to the response as it comes
+                // responseText += message.text;
+                // add the response as it comes in using setChat
+                setResponseText((prev) => prev + message.text);
               }
-            })
-            .catch((error) => console.error(error));
+            }
+          })
+          .catch((error) => console.error(error));
 
-            setChat((prev) => [
-              ...prev,
-              { from: "LLM Pro Max", isText: true, text: responseText },
-            ]);
-            setResponseText("");
+        setChat((prev) => [
+          ...prev,
+          { from: "LLM Pro Max", isText: true, text: responseText },
+        ]);
+        setResponseText("");
       }
     }
   };
@@ -156,9 +164,16 @@ function App() {
               <BiUser size={20} />
               <p>Upgrade plan</p>
             </div>
-            <div className="sidebar-info-user">
+            <div
+              className="sidebar-info-user"
+              onClick={() => {
+                logout({
+                  logoutParams: { returnTo: window.location.origin },
+                });
+              }}
+            >
               <BiSolidUserCircle size={20} />
-              <p>User</p>
+              <p>Logout</p>
             </div>
           </div>
         </section>
@@ -166,12 +181,11 @@ function App() {
         <section className="main">
           <div className="empty-chat-container" ref={emptyChat}>
             <img src="/logo.png" width={75} height={75} alt="ChatGPT" />
-            <h1>How can I help you today?</h1>
+            <h1>Hey {user?.name}! How can I help you today?</h1>
           </div>
 
           <div className="all-chats" ref={allChats}>
             {chat.map((chat, index) => (
-              
               <div key={index} className="chat-box">
                 <div
                   className={
