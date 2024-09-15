@@ -1,7 +1,7 @@
 import ReactDOM from "react-dom/client";
 import { Auth0Provider } from "@auth0/auth0-react";
 import { ThemeProvider } from "next-themes";
-import { ConvexReactClient } from "convex/react";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import {
   createBrowserRouter,
   Navigate,
@@ -11,7 +11,7 @@ import App from "./App.tsx";
 import Chat from "@/components/Chat.tsx";
 import "./index.css";
 
-// const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 const router = createBrowserRouter([
   {
@@ -35,7 +35,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       useRefreshTokens
       cacheLocation="localstorage"
     >
-      <RouterProvider router={router} />
+      <ConvexProvider client={convex}>
+        <RouterProvider router={router} />
+      </ConvexProvider>
     </Auth0Provider>
   </ThemeProvider>,
 );

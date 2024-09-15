@@ -11,6 +11,8 @@ import { MdOutlineArrowLeft, MdOutlineArrowRight } from "react-icons/md";
 import { CohereClient } from "cohere-ai";
 import Markdown from "react-markdown";
 import { useAuth0 } from "@auth0/auth0-react";
+import { api } from "../../convex/_generated/api";
+import { useMutation } from "convex/react";
 
 function App() {
   const [text, setText] = useState("");
@@ -21,6 +23,8 @@ function App() {
   const allChats = useRef<HTMLDivElement>(null);
   const emptyChat = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useAuth0();
+
+  const addMessage = useMutation(api.tasks.addItem);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -40,7 +44,7 @@ function App() {
     if (allChats.current) {
       allChats.current.scrollTop = allChats.current.scrollHeight;
     }
-  }, [chat]);
+  }, [chat, responseText]);
 
   const cohere = new CohereClient({
     token: import.meta.env.VITE_COHERE_API_KEY,
@@ -56,7 +60,15 @@ function App() {
 
     if (text.startsWith("http") && text.includes("github")) {
       setGitHubLink(text);
-      setChat((prev) => [...prev, { from: "You", text: text }]);
+      setChat((prev) => [...prev, { from: "You", isText: true, text: text }]);
+      addMessage({
+        text: text,
+        from: "You",
+        isText: true,
+      })
+        .then(() => console.log("Message added"))
+        .catch((error) => console.error(error));
+
       emptyChat.current.style.display = "none";
       setText("");
 
@@ -72,6 +84,15 @@ function App() {
               text: `I have successfully extracted the code context from the GitHub repository. Here's a graphical visualization of the codebase.`,
             },
           ]);
+
+          addMessage({
+            text: `I have successfully extracted the code context from the GitHub repository. Here's a graphical visualization of the codebase.`,
+            from: "LLM Pro Max",
+            isText: true,
+          })
+            .then(() => console.log("Message added"))
+            .catch((error) => console.error(error));
+
           setChat((prev) => [
             ...prev,
             {
@@ -83,7 +104,14 @@ function App() {
         })
         .catch((error) => console.error(error));
     } else {
-      setChat((prev) => [...prev, { from: "You", text }]);
+      setChat((prev) => [...prev, { from: "You", isText: true, text }]);
+      addMessage({
+        text: text,
+        from: "You",
+        isText: true,
+      })
+        .then(() => console.log("Message added"))
+        .catch((error) => console.error(error));
       setText("");
       const prompt = text;
       const response = await cohere.chat({
@@ -103,6 +131,14 @@ function App() {
               ...prev,
               { from: "LLM Pro Max", text: data.answer },
             ]);
+
+            addMessage({
+              text: data.answer,
+              from: "LLM Pro Max",
+              isText: true,
+            })
+              .then(() => console.log("Message added"))
+              .catch((error) => console.error(error));
             setText("");
             return;
           })
@@ -137,6 +173,14 @@ function App() {
           ...prev,
           { from: "LLM Pro Max", isText: true, text: responseText },
         ]);
+
+        addMessage({
+          text: responseText,
+          from: "LLM Pro Max",
+          isText: true,
+        })
+          .then(() => console.log("Message added"))
+          .catch((error) => console.error(error));
         setResponseText("");
       }
     }

@@ -11,4 +11,9 @@ export default defineSchema({
     userId: v.id("users"),
     body: v.string(),
   }),
+  chats: defineTable({
+    from: v.string(),
+    isText: v.boolean(),
+    text: v.string(),
+  }),
 });
