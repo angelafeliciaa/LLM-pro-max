@@ -1,4 +1,5 @@
-![image](https://github.com/user-attachments/assets/79304cf3-7fb0-4bb1-a83d-62967f6ef9a1)
+
+<img width="1512" alt="Screenshot 2024-09-15 at 05 43 48" src="https://github.com/user-attachments/assets/ab693cc1-3ed8-4716-b2da-5ac19914512b">
 
 ## Inspiration
 Large Language Models (LLMs) are limited by a token cap, making it difficult for them to process large contexts, such as entire codebases. We wanted to overcome this limitation and provide a solution that enables LLMs to handle extensive projects more efficiently.
