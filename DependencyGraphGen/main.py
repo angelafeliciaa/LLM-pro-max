@@ -2,10 +2,17 @@ import json
 import os
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import io
 
+
 app = FastAPI()
+
+allowed_origins = ["https://localhost:5173"]
+
+app.add_middleware(CORSMiddleware, allowed_origins=allowed_origins,
+                   allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 
 import inspect
