@@ -11,6 +11,15 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain_cohere import CohereRerank
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+allowed_origins = ["http://localhost:5173"]
+
+app.add_middleware(CORSMiddleware, allow_origins=allowed_origins,
+                   allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # # Set up logging
 # logging.basicConfig(level=logging.DEBUG)
@@ -119,29 +128,19 @@ qa_chain = RetrievalQA.from_chain_type(
 )
 
 # Main chat loop
-def chat():
-    print("Welcome to the GitHub Repo Chatbot! Ask me anything about the repository.")
-    print("Type 'quit' to exit.")
+@app.get("/chat/")
+def chat(query: str):
     
-    while True:
-        query = input("\nYou: ")
-        if query.lower() == 'quit':
-            break
+    
+    try:
+        # Retrieve relevant documents with expansion and re-ranking
+        relevant_docs = retrieve_with_expansion_and_reranking(query, compression_retriever)
         
-        try:
-            # Retrieve relevant documents with expansion and re-ranking
-            relevant_docs = retrieve_with_expansion_and_reranking(query, compression_retriever)
-            
-            # Generate answer
-            result = qa_chain({"query": query})
-            answer = result['result']
-            print(*result)
-            
-            print("\nChatbot: " + answer)
-            
-            print()
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
+        # Generate answer
+        result = qa_chain({"query": query})
+        answer = result['result']
 
-if __name__ == "__main__":
-    chat()
+        return {"answer": answer}
+        
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
