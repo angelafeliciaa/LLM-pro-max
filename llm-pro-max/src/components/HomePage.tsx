@@ -33,7 +33,7 @@ export function HomePage() {
               Meet <span className="main-title">LLM Pro Max</span>.
             </h3>
             <p className="text-xl mb-8 text-white-100 opacity-80">
-              Unlock full project context by connecting your GitHub repo.
+              Unlock full project context by connecting your GitHub repository.
             </p>
             <Button
               size="lg"
@@ -44,7 +44,7 @@ export function HomePage() {
           </section>
 
           <section className="grid md:grid-cols-3 gap-8 mb-16">
-            <Card className="bg-blue-800 bg-opacity-20 border-white-700 border-opacity-30">
+            <Card className="bg-blue-800 bg-opacity-10 border-white-700 border-opacity-30">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white-300 opacity-90">
                   <Github size={24} />
@@ -58,7 +58,7 @@ export function HomePage() {
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-blue-800 bg-opacity-20 border-white-700 border-opacity-30">
+            <Card className="bg-blue-800 bg-opacity-10 border-white-700 border-opacity-30">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white-300 opacity-90">
                   <Code size={24} />
@@ -72,7 +72,7 @@ export function HomePage() {
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-blue-800 bg-opacity-20 border-white-700 border-opacity-30">
+            <Card className="bg-blue-800 bg-opacity-10 border-white-700 border-opacity-30">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white-300 opacity-90">
                   <Eye size={24} />
@@ -93,7 +93,7 @@ export function HomePage() {
               Take control of your development process!
             </h3>
             <p className="text-xl mb-8 text-white-100 opacity-80">
-              Stop worrying about context limits—join the revolution with LLM
+              Stop worrying about character limits—join the revolution with LLM
               Pro Max.
             </p>
             <Button
