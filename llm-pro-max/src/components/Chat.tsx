@@ -14,7 +14,7 @@ import Markdown from "react-markdown";
 function App() {
   const [text, setText] = useState("");
   const [chat, setChat] = useState([{}]);
-  const [isGitHub, setIsGitHub] = useState(true);
+  const [isGitHub, setIsGitHub] = useState(false);
   const [response, setResponse] = useState("");
   const [errorText, setErrorText] = useState("");
   const [isShowSidebar, setIsShowSidebar] = useState(false);
@@ -48,6 +48,10 @@ function App() {
   const submitHandler = async (e: any) => {
     e.preventDefault();
     if (!text) return;
+
+    if (text.startsWith("https") && text.includes("github")) {
+      setIsGitHub(true);
+    }
 
     if (isGitHub) {
       setChat((prev) => [...prev, { from: "You", text: gitHubLink }]);
