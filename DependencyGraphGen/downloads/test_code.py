@@ -117,7 +117,7 @@ class MysticalMammoth:
 
     def consult_scroll(self):
         if self.ancient_scroll.is_valid():
-            self.ancient_scroll.decode()
+            self.ancient_scroll.decde()
 
     class AncientScroll:
         def __init__(self):
