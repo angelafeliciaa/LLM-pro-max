@@ -1,21 +1,41 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import {
   useState,
-  useEffect,
-  useRef,
   useCallback,
   useLayoutEffect,
+  useEffect,
+  useRef,
 } from "react";
-import { BiPlus, BiUser, BiSend, BiSolidUserCircle } from "react-icons/bi";
+import { BiUser, BiSend, BiSolidUserCircle } from "react-icons/bi";
 import { MdOutlineArrowLeft, MdOutlineArrowRight } from "react-icons/md";
 import { CohereClient } from "cohere-ai";
 import Markdown from "react-markdown";
 
 function App() {
   const [text, setText] = useState("");
-  const [chat, setChat] = useState([]);
+  const [chat, setChat] = useState([{}]);
+  const [isGitHub, setIsGitHub] = useState(true);
   const [response, setResponse] = useState("");
   const [errorText, setErrorText] = useState("");
   const [isShowSidebar, setIsShowSidebar] = useState(false);
+  const allChats = useRef<HTMLDivElement>(null);
+  const emptyChat = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const initialMessage = {
+      from: "LLM Pro Max",
+      isText: true,
+      text: "Hello, I'm LLM Pro Max. I can help you with your coding questions. Please provide me with the link to your GitHub repository.",
+    };
+
+    setChat([initialMessage]);
+  }, []);
+
+  useEffect(() => {
+    if (allChats.current) {
+      allChats.current.scrollTop = allChats.current.scrollHeight;
+    }
+  }, [chat]);
 
   const cohere = new CohereClient({
     token: import.meta.env.VITE_COHERE_API_KEY,
@@ -29,101 +49,74 @@ function App() {
     e.preventDefault();
     if (!text) return;
 
-    setErrorText("");
+    if (isGitHub) {
+      setChat((prev) => [...prev, { from: "You", text: gitHubLink }]);
+      emptyChat.current.style.display = "none";
+      setText("");
+      const gitHubLink = text;
 
-    const prompt = text;
+      // Get the graph from the python script
+      fetch(`http://localhost:8000/getGraph?repo_url=${gitHubLink}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setChat((prev) => [
+            ...prev,
+            {
+              from: "LLM Pro Max",
+              isText: true,
+              text: `I have successfully extracted the code context from the GitHub repository. Here's a graphical visualization of the codebase.`,
+            },
+          ]);
+          setChat((prev) => [
+            ...prev,
+            {
+              from: "LLM Pro Max",
+              isText: false,
+              text: `<iframe src="http://127.0.0.1:8000/outputs/graph.html" frameborder="0"></iframe> <br><br> <a href="http://127.0.0.1:8000/outputs/graph.html" target="_blank"><b>Open in new tab</b></a>`,
+            },
+          ]);
 
-    const response = await cohere.chat({
-      model: "command-r-08-2024",
-      // message: prompt,
-      message: `Extract relevant coding function names from the following string: "${prompt}" and return as a json object with key "functions"`,
-      responseFormat: { type: "json_object" },
-    });
+          setIsGitHub(false);
+        })
+        .catch((error) => console.error(error));
+    }
 
-    console.log(response.text);
+    if (!isGitHub) {
+      const prompt = text;
+      const response = await cohere.chat({
+        model: "command-r-08-2024",
+        // message: prompt,
+        message: `Extract relevant coding function names from the following string: "${prompt}" and return as a json object with key "functions"`,
+        responseFormat: { type: "json_object" },
+      });
 
-    fetch(`http://localhost:8000/required_code?function_names=${response.text}`)
-      .then((response) => response.json())
-      .then(async (data) => {
-        const finalResponse = await cohere.chatStream({
-          model: "command-r-08-2024",
-          message: `${prompt} Use the following code context to answer the question: ${data}`,
-        });
+      console.log(response.text);
 
-        console.log(
-          `${prompt} Use the following code context to answer the question: ${data}`,
-        );
+      fetch(
+        `http://localhost:8000/required_code?function_names=${response.text}`,
+      )
+        .then((response) => response.json())
+        .then(async (data) => {
+          const finalResponse = await cohere.chatStream({
+            model: "command-r-08-2024",
+            message: `${prompt} Use the following code context to answer the question: ${data}`,
+          });
 
-        for await (const message of finalResponse) {
-          if (message.eventType === "text-generation") {
-            // append each text to the response as it comes
-            // responseText += message.text;
-            setResponse((prev) => prev + message.text);
+          console.log(
+            `${prompt} Use the following code context to answer the question: ${data}`,
+          );
+
+          for await (const message of finalResponse) {
+            if (message.eventType === "text-generation") {
+              // append each text to the response as it comes
+              // responseText += message.text;
+              setResponse((prev) => prev + message.text);
+            }
           }
-        }
-      })
-      .catch((error) => console.error(error));
-
-    // let responseText = "";
-
-    // for await (const message of response) {
-    //   if (message.eventType === "text-generation") {
-    //     // append each text to the response as it comes
-    //     responseText += message.text;
-    //     // setResponse((prev) => prev + message.text);
-    //   }
-    // }
+        })
+        .catch((error) => console.error(error));
+    }
   };
-
-  //     const options = {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: import.meta.env.VITE_AUTH_TOKEN,
-  //       },
-  //       body: JSON.stringify({
-  //         message: text,
-  //       }),
-  //     };
-
-  //     try {
-  //       const response = await fetch(
-  //         `${import.meta.env.VITE_API_URL}/api/completions`,
-  //         options,
-  //       );
-
-  //       if (response.status === 429) {
-  //         return setErrorText("Too many requests, please try again later.");
-  //       }
-
-  //       const data = await response.json();
-
-  //       if (data.error) {
-  //         setErrorText(data.error.message);
-  //         setText("");
-  //       } else {
-  //         setErrorText("");
-  //       }
-
-  //       if (!data.error) {
-  //         setErrorText("");
-  //         setMessage(data.choices[0].message);
-  //         setTimeout(() => {
-  //           scrollToLastItem.current?.lastElementChild?.scrollIntoView({
-  //             behavior: "smooth",
-  //           });
-  //         }, 1);
-  //         setTimeout(() => {
-  //           setText("");
-  //         }, 2);
-  //       }
-  //     } catch (e) {
-  //       setErrorText(e.message);
-  //       console.error(e);
-  //     } finally {
-  //       setIsResponseLoading(false);
-  //     }
-  //   };
 
   useLayoutEffect(() => {
     const handleResize = () => {
@@ -155,28 +148,33 @@ function App() {
         </section>
 
         <section className="main">
-          <div className="empty-chat-container">
+          <div className="empty-chat-container" ref={emptyChat}>
             <img src="/logo.png" width={45} height={45} alt="ChatGPT" />
             <h1>LLM Pro Max</h1>
             <h3>How can I help you today?</h3>
           </div>
 
-          <div className="all-chats">
+          <div className="all-chats" ref={allChats}>
             {chat.map((chat, index) => (
               <div key={index} className="chat-box">
-                <div className="chat-message">
-                  <Markdown>{chat}</Markdown>
+                <div
+                  className={
+                    chat.from === "You"
+                      ? "chat-message you"
+                      : "chat-message llm"
+                  }
+                >
+                  <p className="role-title">{chat.from}</p>
+                  {chat.isText && <Markdown>{chat.text}</Markdown>}
+                  {!chat.isText && (
+                    <div
+                      className="graph-container"
+                      dangerouslySetInnerHTML={{ __html: chat.text }}
+                    ></div>
+                  )}
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="chat-container">
-            <div className="chat-box">
-              <div className="chat-message">
-                <Markdown>{response}</Markdown>
-              </div>
-            </div>
           </div>
 
           {isShowSidebar ? (

@@ -7,6 +7,19 @@ import tempfile
 import argparse
 import webbrowser
 import html
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+app = FastAPI()
+
+allowed_origins = ["http://localhost:5173"]
+
+app.add_middleware(CORSMiddleware, allow_origins=allowed_origins,
+                   allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# Mount the static files directory
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 def clone_github_repo(repo_url, target_dir):
     try:
@@ -279,7 +292,7 @@ def visualize_import_graph(graph, output_file):
         file.write(modified_content)
 
     print(f"Interactive import graph visualization saved as '{output_file}'")
-    webbrowser.open(f"file://{os.path.abspath(output_file)}", new=2)
+    # webbrowser.open(f"file://{os.path.abspath(output_file)}", new=2)
 
 def analyze_codebase(graph):
     print("\nCodebase Analysis:")
@@ -302,15 +315,19 @@ def analyze_codebase(graph):
     function_call_count = sum(1 for _, _, data in graph.edges(data=True) if data.get('type') == 'function_call')
     print(f"5. Number of function calls: {function_call_count}")
 
-def main():
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+@app.get("/getGraph/")
+async def viz(repo_url: str):
     parser = argparse.ArgumentParser(description="Analyze Python codebase and visualize import graph.")
     parser.add_argument('repo_url', help="URL of the GitHub repository to clone.")
     parser.add_argument('output_file', help="File to save the interactive visualization.")
-    args = parser.parse_args()
 
     # Clone the repository
     repo_dir = tempfile.mkdtemp()
-    clone_github_repo(args.repo_url, repo_dir)
+    clone_github_repo(repo_url, repo_dir)
 
     # Build the import graph
     graph = build_import_graph(repo_dir)
@@ -319,7 +336,6 @@ def main():
     analyze_codebase(graph)
 
     # Visualize the import graph
-    visualize_import_graph(graph, args.output_file)
-
-if __name__ == "__main__":
-    main()
+    visualize_import_graph(graph, "./outputs/graph.html")
+    
+    return {"status": True, "message": "Graph generated successfully!", "url": "http://127.0.0.1:8000/outputs/graph.html"}
