@@ -106,7 +106,7 @@ header {
 }
 
 .main-title {
-  background-image: linear-gradient(99deg, #f20dd3 0, #00fff7 100%);
+  background-image: linear-gradient(99deg, #a72c96 0, #94f6f5 100%);
   background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 800;
@@ -324,6 +324,7 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  padding-top: 1.4rem;
 }
 
 .empty-chat-container h3 {
@@ -354,7 +355,7 @@ button {
   border-radius: 0.3rem;
   display: flex;
   align-items: center;
-  background-color: #404150;
+  background-color: #2f2f2f;
   box-shadow:
     rgb(0, 0, 0, 0.05) 0 3.3rem 3.4rem,
     rgb(0, 0, 0, 0.05) 0 -0.7rem 1.8rem,
@@ -368,7 +369,7 @@ button {
   height: 3rem;
   font-size: 1rem;
   padding-right: 1rem;
-  background-color: #404150;
+  background-color:#2f2f2f;
   outline: none;
   border: none;
 }
@@ -402,8 +403,8 @@ button {
   max-width: 50vw;
   gap: 0.5rem;
   padding: 1vw;
-  border-radius: 0.3rem;
-  background-color: #444655;
+  border-radius: 0.6rem;
+  background-color:#2f2f2f;
   margin: 0.5rem 0;
 }
 

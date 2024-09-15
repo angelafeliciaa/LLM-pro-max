@@ -41,12 +41,12 @@ class Node():
         if to_node not in self.to_nodes:
             self.to_nodes.append(to_node)
     
-    def traverse(self):
-        ret = [self]
+    def traverse(self, traversed=[]):
+        traversed.append(self)
         for n in self.to_nodes:
-            if n not in ret:
-                ret += n.traverse()
-        return ret
+            if n not in traversed:
+                n.traverse(traversed)
+        return traversed
     
     @property
     def name(self):
@@ -157,7 +157,7 @@ for n_1 in graph:
     for n_2 in graph:
         if n_1 == n_2:
             continue # do not add edge to self
-        if re.search(f"{n_2.name}(.*)", source): # if we find foo() or whatever in the source code
+        if re.search(f"{n_2.name}" + r"\(.*\)", source): # if we find foo() or whatever in the source code
             n_1.add_edge_to(n_2)
 
-print(required_code(graph.get_node_by_name("bar")))
+print(required_code(graph.get_node_by_name("authenticate")))

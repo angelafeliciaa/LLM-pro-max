@@ -60,12 +60,12 @@ class Node():
         if to_node not in self.to_nodes:
             self.to_nodes.append(to_node)
     
-    def traverse(self):
-        ret = [self]
+    def traverse(self, traversed=[]):
+        traversed.append(self)
         for n in self.to_nodes:
-            if n not in ret:
-                ret += n.traverse()
-        return ret
+            if n not in traversed:
+                n.traverse(traversed)
+        return traversed
     
     @property
     def name(self):
@@ -111,7 +111,8 @@ class Group():
                 self.nodes.append(n)
             elif type(i) == classType:
                 g = Group(_non_magic_dir(i), i)
-                self.subgroups.append(g)
+                if g not in self.subgroups:
+                    self.subgroups.append(g)
                 self.nodes += g.nodes
     
     def gen_code(self, fns, indent=0):
@@ -211,7 +212,7 @@ def get_required_code(function_names: str):
         for n_2 in graph:
             if n_1 == n_2:
                 continue # do not add edge to self
-            if re.search(f"{n_2.name}(.*)", source): # if we find foo() or whatever in the source code
+            if re.search(f"{n_2.name}" + r"\(.*\)", source): # if we find foo() or whatever in the source code
                 n_1.add_edge_to(n_2)
 
     return required_code()

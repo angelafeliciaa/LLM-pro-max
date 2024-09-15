@@ -153,9 +153,8 @@ function App() {
 
         <section className="main">
           <div className="empty-chat-container" ref={emptyChat}>
-            <img src="/logo.png" width={45} height={45} alt="ChatGPT" />
-            <h1>LLM Pro Max</h1>
-            <h3>How can I help you today?</h3>
+            <img src="/logo.png" width={75} height={75} alt="ChatGPT" />
+            <h1>How can I help you today?</h1>
           </div>
 
           <div className="all-chats" ref={allChats}>
@@ -168,7 +167,6 @@ function App() {
                       : "chat-message llm"
                   }
                 >
-                  <p className="role-title">{chat.from}</p>
                   {chat.isText && <Markdown>{chat.text}</Markdown>}
                   {!chat.isText && (
                     <div
