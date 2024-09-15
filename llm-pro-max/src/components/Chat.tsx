@@ -14,9 +14,8 @@ import Markdown from "react-markdown";
 function App() {
   const [text, setText] = useState("");
   const [chat, setChat] = useState([{}]);
-  const [isGitHub, setIsGitHub] = useState(false);
-  const [response, setResponse] = useState("");
-  const [errorText, setErrorText] = useState("");
+  const [gitHubLink, setGitHubLink] = useState("");
+  const [responseText, setResponseText] = useState("");
   const [isShowSidebar, setIsShowSidebar] = useState(false);
   const allChats = useRef<HTMLDivElement>(null);
   const emptyChat = useRef<HTMLDivElement>(null);
@@ -49,20 +48,16 @@ function App() {
     e.preventDefault();
     if (!text) return;
 
-    if (text.startsWith("https") && text.includes("github")) {
-      setIsGitHub(true);
-    }
-
-    if (isGitHub) {
-      setChat((prev) => [...prev, { from: "You", text: gitHubLink }]);
+    if (text.startsWith("http") && text.includes("github")) { 
+      setGitHubLink(text);
+      setChat((prev) => [...prev, { from: "You", text: text }]);
       emptyChat.current.style.display = "none";
       setText("");
-      const gitHubLink = text;
 
       // Get the graph from the python script
-      fetch(`http://localhost:8000/getGraph?repo_url=${gitHubLink}`)
+      fetch(`http://localhost:5000/getGraph?repo_url=${text}`)
         .then((response) => response.json())
-        .then((data) => {
+        .then(() => {
           setChat((prev) => [
             ...prev,
             {
@@ -76,16 +71,14 @@ function App() {
             {
               from: "LLM Pro Max",
               isText: false,
-              text: `<iframe src="http://127.0.0.1:8000/outputs/graph.html" frameborder="0"></iframe> <br><br> <a href="http://127.0.0.1:8000/outputs/graph.html" target="_blank"><b>Open in new tab</b></a>`,
+              text: `<iframe src="http://127.0.0.1:5000/outputs/graph.html" frameborder="0"></iframe> <br><br> <a href="http://127.0.0.1:5000/outputs/graph.html" target="_blank"><b>Open in new tab</b></a>`,
             },
           ]);
-
-          setIsGitHub(false);
         })
         .catch((error) => console.error(error));
-    }
-
-    if (!isGitHub) {
+    } else {
+      setChat((prev) => [...prev, { from: "You", text }]);
+      setText("");
       const prompt = text;
       const response = await cohere.chat({
         model: "command-r-08-2024",
@@ -94,31 +87,50 @@ function App() {
         responseFormat: { type: "json_object" },
       });
 
-      console.log(response.text);
+      if (JSON.parse(response.text).functions.length === 0) {
+        fetch(`http://127.0.0.1:8080/chat/?repo_url=${gitHubLink}&query=${text}`)
+          .then((response) => response.json())
+          .then((data) => {
+            setChat((prev) => [
+              ...prev,
+              { from: "LLM Pro Max", text: data.answer },
+            ]);
+            setText("");
+            return;
+          })
+          .catch((error) => console.error(error));
+      } else {
+          fetch(
+            `http://localhost:8000/required_code?function_names=${response.text}`,
+          )
+            .then((response) => response.json())
+            .then(async (data) => {
+              const finalResponse = await cohere.chatStream({
+                model: "command-r-08-2024",
+                message: `${prompt} Use the following code context to answer the question: ${data}`,
+              });
 
-      fetch(
-        `http://localhost:8000/required_code?function_names=${response.text}`,
-      )
-        .then((response) => response.json())
-        .then(async (data) => {
-          const finalResponse = await cohere.chatStream({
-            model: "command-r-08-2024",
-            message: `${prompt} Use the following code context to answer the question: ${data}`,
-          });
+              console.log(
+                `${prompt} Use the following code context to answer the question: ${data}`,
+              );
 
-          console.log(
-            `${prompt} Use the following code context to answer the question: ${data}`,
-          );
+              for await (const message of finalResponse) {
+                if (message.eventType === "text-generation") {
+                  // append each text to the response as it comes
+                  // responseText += message.text;
+                  // add the response as it comes in using setChat
+                  setResponseText((prev) => prev + message.text);
+                }
+              }
+            })
+            .catch((error) => console.error(error));
 
-          for await (const message of finalResponse) {
-            if (message.eventType === "text-generation") {
-              // append each text to the response as it comes
-              // responseText += message.text;
-              setResponse((prev) => prev + message.text);
-            }
-          }
-        })
-        .catch((error) => console.error(error));
+            setChat((prev) => [
+              ...prev,
+              { from: "LLM Pro Max", isText: true, text: responseText },
+            ]);
+            setResponseText("");
+      }
     }
   };
 
@@ -159,6 +171,7 @@ function App() {
 
           <div className="all-chats" ref={allChats}>
             {chat.map((chat, index) => (
+              
               <div key={index} className="chat-box">
                 <div
                   className={
@@ -177,6 +190,13 @@ function App() {
                 </div>
               </div>
             ))}
+            {responseText && (
+              <div className="chat-box">
+                <div className="chat-message llm">
+                  <Markdown>{responseText}</Markdown>
+                </div>
+              </div>
+            )}
           </div>
 
           {isShowSidebar ? (
@@ -194,8 +214,6 @@ function App() {
           )}
           <div className="main-header"></div>
           <div className="main-bottom">
-            {errorText && <p className="errorText">{errorText}</p>}
-            {errorText && <p id="errorTextHint"></p>}
             <form className="form-container" onSubmit={submitHandler}>
               <input
                 type="text"

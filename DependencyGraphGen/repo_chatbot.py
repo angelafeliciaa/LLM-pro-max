@@ -28,42 +28,6 @@ app.add_middleware(CORSMiddleware, allow_origins=allowed_origins,
 # Set your API keys
 os.environ["COHERE_API_KEY"] = "fVKwe3yLSSx4DQb7Bek6E9VvHbdHFKbocTa70hMI"  # Replace with your actual API key
 
-# GitHub repo details
-repo_url = "https://github.com/codegen-sh/Loop-Labyrinth-Analysis.git"
-repo_path = "./repo_path"
-
-# Load GitHub repository
-loader = GitLoader(
-    clone_url=repo_url,
-    repo_path=repo_path,
-    branch="main"
-)
-documents = loader.load()
-
-# Split documents
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-splits = text_splitter.split_documents(documents)
-
-# Create embeddings and vector store
-embeddings = CohereEmbeddings(
-    model="embed-english-v2.0"
-)
-vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
-
-# Create base retriever
-base_retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
-
-# Create reranker for contextual compression
-reranker = CohereRerank(
-     model="rerank-english-v2.0",
-)
-
-# Create contextual compression retriever
-compression_retriever = ContextualCompressionRetriever(
-    base_compressor=reranker,
-    base_retriever=base_retriever
-)
-
 # Define query expansion function
 def expand_query(query: str) -> List[str]:
     llm = Cohere(model="command-r-08-2024")
@@ -119,24 +83,66 @@ qa_prompt = PromptTemplate(
     input_variables=["context", "question"],
     template="Answer the following question based on the given context:\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer:",
 )
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    retriever=compression_retriever,
-    chain_type="stuff",
-    return_source_documents=True,
-    chain_type_kwargs={"prompt": qa_prompt}
+
+def bot_setup(repo_url: str):
+    # GitHub repo details
+    repo_path = "./repo_path"
+
+    # Load GitHub repository
+    loader = GitLoader(
+        clone_url=repo_url,
+        repo_path=repo_path,
+        branch="main"
+    )
+
+    documents = loader.load()
+    splits = text_splitter.split_documents(documents)
+
+    vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
+
+    # Create base retriever
+    base_retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
+
+    # Create contextual compression retriever
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=reranker,
+        base_retriever=base_retriever
+    )
+
+    return compression_retriever
+
+
+
+# Split documents
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+
+# Create embeddings and vector store
+embeddings = CohereEmbeddings(
+    model="embed-english-v2.0"
+)
+
+# Create reranker for contextual compression
+reranker = CohereRerank(
+     model="rerank-english-v2.0",
 )
 
 # Main chat loop
 @app.get("/chat/")
-def chat(query: str):
+def chat(query: str, repo_url: str):
     
-    
-    try:
-        # Retrieve relevant documents with expansion and re-ranking
-        relevant_docs = retrieve_with_expansion_and_reranking(query, compression_retriever)
-        
+    setup = bot_setup(repo_url)
+    try:        
         # Generate answer
+       
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            retriever=setup,
+            chain_type="stuff",
+            return_source_documents=True,
+            chain_type_kwargs={"prompt": qa_prompt}
+            
+        )
+        retrieve_with_expansion_and_reranking(query, setup)
         result = qa_chain({"query": query})
         answer = result['result']
 
