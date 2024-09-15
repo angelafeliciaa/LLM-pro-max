@@ -1,3 +1,4 @@
+import json
 import os
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -177,12 +178,10 @@ async def download_file(file_url: str = Query(..., description="URL of the file 
 def root():
     return {"message": "Hello World"}
 
-@app.get("/required_code/{function_name}")
-def get_required_code(function_name):
+@app.get("/required_code/")
+def get_required_code(function_names: str):
+    function_names_list = json.loads(function_names)["functions"]
 
-    def required_code(n:Node):
-        return module_level_group.gen_code(required_functions(n))
-    
     test_code = importlib.import_module("downloads.test_code")
 
     module_level_group = Group(_non_magic_dir(test_code))
@@ -190,6 +189,12 @@ def get_required_code(function_name):
     graph = Graph()
     for n in module_level_group.nodes:
         graph.add_node(n)
+
+    def required_code():
+        total_required_functions = set([])
+        for f in function_names_list:
+            total_required_functions |= set(required_functions(graph.get_node_by_name(f)))
+        return module_level_group.gen_code(total_required_functions)
 
     for n_1 in graph:
         if n_1.class_obj == None:
@@ -202,4 +207,4 @@ def get_required_code(function_name):
             if re.search(f"{n_2.name}(.*)", source): # if we find foo() or whatever in the source code
                 n_1.add_edge_to(n_2)
 
-    return required_code(graph.get_node_by_name(function_name))
+    return required_code()
