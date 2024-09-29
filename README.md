@@ -21,3 +21,6 @@ We deepened our understanding of vector embedding, enhanced our skills with RAG 
 
 ## What's next for LLM Pro Max
 We aim to improve the user interface and refine the chatbot’s interactions, making the experience even smoother and more visually appealing. (Please Fund Us)
+
+## Devpost Link:
+https://devpost.com/software/llm-pro-max
